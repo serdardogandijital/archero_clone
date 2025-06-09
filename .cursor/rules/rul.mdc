@@ -1,0 +1,180 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+{
+  "project_name": "Archero Clone - Flutter Flame Game",
+  "project_type": "flutter_game",
+  "framework": "flutter_flame",
+  
+  "CORE_RULES": {
+    "code_quality": [
+      "ASLA placeholder kod yazma - her zaman tam çalışır kod ver",
+      "TODO, FIXME, PLACEHOLDER yazmak yasak",
+      "Null safety tamamen uygula (?., ??, late, required kullan)",
+      "const constructors her yerde kullan",
+      "Package imports kullan (import 'package:' - relative imports yasak)",
+      "Clean code principles - fonksiyonlar 20 satırı geçmesin",
+      "Single responsibility principle uygula",
+      "DRY principle - kod tekrarı yapma"
+    ],
+    
+    "flutter_specific": [
+      "Modern Flutter patterns kullan (3.19+ features)",
+      "Widget composition over inheritance",
+      "Provider veya Riverpod state management",
+      "Async/await düzgün kullan",
+      "BuildContext extension'ları kullan",
+      "Material 3 design system",
+      "Responsive design prensipleri"
+    ],
+    
+    "flame_game_rules": [
+      "Component-based architecture zorunlu",
+      "HasGameRef mixin'i doğru kullan",
+      "Object pooling implement et (performance için)",
+      "Efficient collision detection",
+      "Memory management - removeFromParent() unutma",
+      "Game loop optimization",
+      "Asset preloading",
+      "Sprite caching"
+    ],
+    
+    "performance": [
+      "60 FPS maintain et",
+      "Memory leak'leri önle",
+      "Excessive widget rebuilds'i engelle",
+      "Lazy loading uygula",
+      "Image compression kullan",
+      "Minimal draw calls",
+      "Efficient data structures"
+    ]
+  },
+  
+  "NAMING_CONVENTIONS": {
+    "files": "snake_case (archero_game.dart)",
+    "classes": "PascalCase (ArcheroGame)",
+    "variables": "camelCase (playerSpeed)",
+    "constants": "SCREAMING_SNAKE_CASE (MAX_ENEMIES)",
+    "private": "_underscore prefix (_privateMethod)",
+    "components": "Component suffix (PlayerComponent)"
+  },
+  
+  "FILE_STRUCTURE": {
+    "lib/": {
+      "main.dart": "App entry point",
+      "game/": "Game core logic",
+      "components/": "Game entities (Player, Enemy, Bullet)",
+      "systems/": "Game systems (WeaponSystem, SpawnSystem)",
+      "ui/": "UI components and screens",
+      "utils/": "Utilities and constants",
+      "models/": "Data models",
+      "services/": "External services"
+    },
+    "assets/": {
+      "images/": "Sprite files (.png)",
+      "audio/": "Sound files (.mp3, .wav)",
+      "data/": "JSON configs"
+    }
+  },
+  
+  "CODING_STANDARDS": {
+    "error_handling": [
+      "Try-catch blokları kullan",
+      "Meaningful error messages",
+      "Graceful degradation",
+      "User-friendly error UI"
+    ],
+    
+    "documentation": [
+      "Yorumları Türkçe yaz",
+      "Complex logic'i açıkla",
+      "Public API'leri dokümante et",
+      "README.md güncel tut"
+    ],
+    
+    "testing": [
+      "Unit tests yaz",
+      "Widget tests ekle",
+      "Integration tests oluştur",
+      "Test coverage %80+"
+    ]
+  },
+  
+  "GAME_SPECIFIC_RULES": {
+    "archero_mechanics": [
+      "Joystick hareket - otomatik ateş",
+      "En yakın düşmana ateş et",
+      "Düşmanlar oyuncuya doğru hareket etsin",
+      "Level-based progression",
+      "Random skill system",
+      "Score ve XP sistemi"
+    ],
+    
+    "technical_specs": [
+      "Target 60 FPS",
+      "1080x1920 resolution support",
+      "Android API 21+ / iOS 12+",
+      "Max 10 concurrent enemies",
+      "Bullet pooling (max 50)",
+      "Audio mixing 8 channels"
+    ]
+  },
+  
+  "DEPLOYMENT_RULES": {
+    "android": [
+      "ProGuard obfuscation",
+      "App Bundle format",
+      "Target API 34+",
+      "Keystore security"
+    ],
+    
+    "ios": [
+      "App Store guidelines compliance",
+      "iOS 12+ support",
+      "Privacy info.plist",
+      "Code signing certificates"
+    ]
+  },
+  
+  "FORBIDDEN_PRACTICES": [
+    "Global variables kullanma",
+    "Hard-coded values (constants.dart kullan)",
+    "Magic numbers",
+    "Nested ternary operators",
+    "Deep widget trees (6+ seviye)",
+    "Blocking UI thread",
+    "Memory leaks",
+    "Unused imports",
+    "setState() abuse",
+    "Build method'da heavy operations"
+  ],
+  
+  "MANDATORY_PATTERNS": [
+    "Repository pattern for data",
+    "Factory pattern for object creation",
+    "Observer pattern for events",
+    "Command pattern for actions",
+    "State pattern for game states",
+    "Singleton pattern for managers"
+  ],
+  
+  "DEBUG_AND_MONITORING": [
+    "Flutter Inspector kullan",
+    "Performance overlay enable",
+    "Memory profiling",
+    "FPS counter implement",
+    "Crash reporting (Firebase Crashlytics)",
+    "Analytics tracking (Firebase Analytics)"
+  ],
+  
+  "PROMPT_REMINDERS": [
+    "Bu .cursorrules dosyasını HER PROMPT'ta dikkate al",
+    "Kuralları ihlal eden kod yazarsan uyar ve düzelt",
+    "Performance optimizasyonu her zaman öncelik",
+    "Türkçe yorum ve açıklama yaz",
+    "Working code ver, eksik bırakma",
+    "Modern Flutter/Dart patterns kullan"
+  ]
+}
