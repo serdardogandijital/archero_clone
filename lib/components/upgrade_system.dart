@@ -189,7 +189,7 @@ class UpgradeSystem extends Component with HasGameRef<ArcheroGame> {
         name: 'Patlayıcı Mermi',
         description: 'Mermiler çevreye hasar verir',
         value: 60.0, // Patlama yarıçapı
-        icon: Icons.explosive,
+        icon: Icons.burst_mode,
         color: Colors.red,
         isLegendary: true,
       ),
