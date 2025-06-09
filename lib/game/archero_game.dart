@@ -17,10 +17,160 @@ import '../ui/game_over_overlay.dart';
 import '../ui/hud_overlay.dart';
 import '../ui/level_up_overlay.dart';
 
+// Parallax Background Katmanı
+class BackgroundLayer extends Component {
+  final List<SpriteComponent> tiles = [];
+  final double parallaxSpeed;
+  final Vector2 tileSize;
+  final Sprite? sprite;
+  late Vector2 lastPosition;
+  
+  BackgroundLayer({
+    required this.parallaxSpeed,
+    required this.tileSize,
+    this.sprite,
+  });
+  
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    lastPosition = Vector2.zero();
+    _createInitialTiles();
+  }
+  
+  void _createInitialTiles() {
+    // 5x5 tile grid oluştur
+    for (int x = -2; x <= 2; x++) {
+      for (int y = -2; y <= 2; y++) {
+        final tile = SpriteComponent(
+          sprite: sprite,
+          size: tileSize,
+          position: Vector2(x * tileSize.x, y * tileSize.y),
+          priority: -10 + (parallaxSpeed * 10).round(),
+        );
+        
+        if (sprite == null) {
+          // Fallback için farklı tonlarda arka plan
+          final color = Color.lerp(
+            const Color.fromARGB(255, 20, 20, 40),
+            const Color.fromARGB(255, 40, 40, 80),
+            parallaxSpeed,
+          ) ?? const Color.fromARGB(255, 30, 30, 60);
+          
+          tile.add(RectangleComponent(
+            size: tileSize,
+            paint: Paint()..color = color,
+          ));
+        }
+        
+        tiles.add(tile);
+        add(tile);
+      }
+    }
+  }
+  
+  void updatePosition(Vector2 cameraPosition) {
+    final deltaMovement = (cameraPosition - lastPosition) * parallaxSpeed;
+    
+    for (final tile in tiles) {
+      tile.position -= deltaMovement;
+      
+      // Tile wrapping - ekranın dışına çıkan tile'ları karşı tarafa taşı
+      if (tile.position.x < cameraPosition.x - tileSize.x * 3) {
+        tile.position.x += tileSize.x * 5;
+      } else if (tile.position.x > cameraPosition.x + tileSize.x * 3) {
+        tile.position.x -= tileSize.x * 5;
+      }
+      
+      if (tile.position.y < cameraPosition.y - tileSize.y * 3) {
+        tile.position.y += tileSize.y * 5;
+      } else if (tile.position.y > cameraPosition.y + tileSize.y * 3) {
+        tile.position.y -= tileSize.y * 5;
+      }
+    }
+    
+    lastPosition = cameraPosition.clone();
+  }
+}
+
+// Ana Parallax Background
+class ParallaxBackground extends Component with HasGameRef<ArcheroGame> {
+  late List<BackgroundLayer> layers;
+  Vector2 lastCameraPosition = Vector2.zero();
+  
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    
+    // Farklı hızlarda hareket eden katmanlar
+    layers = [];
+    
+    try {
+      final bgSprite = Sprite(gameRef.images.fromCache('background.png'));
+      
+      // En yavaş katman - ana arka plan
+      layers.add(BackgroundLayer(
+        parallaxSpeed: 0.2,
+        tileSize: gameRef.size * 1.5,
+        sprite: bgSprite,
+      ));
+      
+      // Orta katman - biraz daha hızlı
+      layers.add(BackgroundLayer(
+        parallaxSpeed: 0.5,
+        tileSize: gameRef.size * 1.2,
+        sprite: bgSprite,
+      ));
+      
+      // En hızlı katman - ön plan
+      layers.add(BackgroundLayer(
+        parallaxSpeed: 0.8,
+        tileSize: gameRef.size,
+        sprite: bgSprite,
+      ));
+      
+    } catch (e) {
+      print('Background sprite yüklenemedi, fallback kullanılıyor: $e');
+      
+      // Fallback katmanları - sprite olmadan
+      layers.add(BackgroundLayer(
+        parallaxSpeed: 0.2,
+        tileSize: gameRef.size * 1.5,
+      ));
+      
+      layers.add(BackgroundLayer(
+        parallaxSpeed: 0.5,
+        tileSize: gameRef.size * 1.2,
+      ));
+      
+      layers.add(BackgroundLayer(
+        parallaxSpeed: 0.8,
+        tileSize: gameRef.size,
+      ));
+    }
+    
+    // Katmanları ekle
+    for (final layer in layers) {
+      add(layer);
+    }
+  }
+  
+  void updatePosition(Vector2 cameraPosition) {
+    for (final layer in layers) {
+      layer.updatePosition(cameraPosition);
+    }
+    lastCameraPosition = cameraPosition.clone();
+  }
+}
+
 class ArcheroGame extends FlameGame with HasCollisionDetection, PanDetector, DragCallbacks {
   late Player player;
   late JoystickComponent joystick;
   late UpgradeSystem upgradeSystem;
+  
+  // Parallax background için
+  late ParallaxBackground parallaxBackground;
+  Vector2? lastCameraPosition;
   
   final ValueNotifier<int> scoreNotifier = ValueNotifier(0);
   int get score => scoreNotifier.value;
@@ -67,32 +217,9 @@ class ArcheroGame extends FlameGame with HasCollisionDetection, PanDetector, Dra
       print('Asset yükleme hatası: $e');
     }
     
-    // Büyük tile'lı arka plan oluştur
-    try {
-      final bgSprite = Sprite(images.fromCache('background.png'));
-      // 3x3 = 9 background tile oluştur
-      for (int x = -1; x <= 1; x++) {
-        for (int y = -1; y <= 1; y++) {
-          final backgroundTile = SpriteComponent(
-            sprite: bgSprite,
-            size: size,
-            position: Vector2(x * size.x, y * size.y),
-            priority: -10,
-          );
-          add(backgroundTile);
-        }
-      }
-    } catch (e) {
-      print('Arka plan yükleme hatası: $e');
-      // Fallback renk
-      final background = RectangleComponent(
-        size: size * 3, // 3x büyük alan
-        position: -size, // Merkezi hizala
-        paint: Paint()..color = const Color.fromARGB(255, 30, 30, 60),
-        priority: -10,
-      );
-      add(background);
-    }
+    // Parallax background sistemi
+    parallaxBackground = ParallaxBackground();
+    add(parallaxBackground);
     
     world = World();
     add(world);
@@ -152,6 +279,11 @@ class ArcheroGame extends FlameGame with HasCollisionDetection, PanDetector, Dra
     
     difficultyTimer?.update(dt);
     _waveTransitionTimer?.update(dt);
+    
+    // Parallax background güncelle
+    if (player.isMounted) {
+      parallaxBackground.updatePosition(camera.viewfinder.position);
+    }
     
     _checkWaveCompletion();
     _updateMessageDisplay(dt);

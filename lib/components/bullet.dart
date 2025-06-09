@@ -8,126 +8,231 @@ import '../game/archero_game.dart';
 import 'enemy.dart';
 import 'player.dart';
 import '../effects/explosion_effect.dart';
+import 'dart:math' as math;
 
 class Bullet extends SpriteComponent with HasGameRef<ArcheroGame>, CollisionCallbacks {
-  Vector2 direction = Vector2.zero();
+  late Vector2 direction;
+  double speed = 400.0;
+  double damage = 25.0;
   bool isPlayerBullet = true;
-  String spritePath = '';
-  double speed = 500;
-  double damage = 25;
-  bool hitSomething = false;
   bool hasPiercing = false;
-  int pierceCount = 0;
-  int maxPierceCount = 3;
-  final List<Component> hitTargets = [];
+  final Set<Component> hitTargets = <Component>{};
+  int maxPiercing = 2;
+  int currentPierces = 0;
+  
+  // Trail efekti için
+  final List<Vector2> _trailPositions = [];
+  final int _maxTrailLength = 8;
+  late final Timer _trailTimer;
 
-  Bullet() : super(size: Vector2.all(20), anchor: Anchor.center);
+  Bullet() : super(anchor: Anchor.center);
+
+  void initialize(Vector2 pos, Vector2 dir, bool playerBullet, String spritePath) {
+    position = pos;
+    direction = dir.normalized();
+    isPlayerBullet = playerBullet;
+    
+    // Bullet'ları daha büyük yap
+    size = isPlayerBullet ? Vector2.all(24) : Vector2.all(20); // Büyütüldü
+  }
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
     
-    // Varsayılan sprite ayarla
-    sprite = await gameRef.loadSprite('bullet.png');
+    try {
+      // Sprite yükle
+      final spritePath = isPlayerBullet ? 'bullet.png' : 'enemy_bullet.png';
+      sprite = await gameRef.loadSprite(spritePath);
+    } catch (e) {
+      print('Bullet sprite yükleme hatası: $e');
+      // Fallback görsel - daha büyük ve etkileyici
+      final paint = Paint()..color = isPlayerBullet ? 
+          const Color(0xFF00FFFF) : // Cyan for player
+          const Color(0xFFFF4444);  // Red for enemy
+      
+      add(CircleComponent(
+        radius: isPlayerBullet ? 12 : 10,
+        paint: paint,
+        anchor: Anchor.center,
+      ));
+      
+      // Parlama efekti ekle
+      add(CircleComponent(
+        radius: isPlayerBullet ? 8 : 6,
+        paint: Paint()..color = Colors.white.withOpacity(0.7),
+        anchor: Anchor.center,
+      ));
+    }
     
-    add(RectangleHitbox(isSolid: true));
+    // Collision hitbox - daha büyük
+    add(CircleHitbox(radius: isPlayerBullet ? 10 : 8));
     
-    // Trail efekti ekle
-    add(
-      TrailEffect(
-        isPlayerBullet
-            ? Colors.blue.withOpacity(0.6)
-            : Colors.red.withOpacity(0.6),
-      ),
-    );
-  }
-
-  void initialize(Vector2 position, Vector2 direction, bool isPlayerBullet, String spritePath) {
-    this.position.setFrom(position);
-    this.direction.setFrom(direction);
-    this.isPlayerBullet = isPlayerBullet;
-    this.spritePath = spritePath;
+    // Trail timer
+    _trailTimer = Timer(0.02, onTick: _addTrailPosition, repeat: true);
+    _trailTimer.start();
     
-    speed = isPlayerBullet ? 700 : 500;
+    // Bullet rotation
+    angle = math.atan2(direction.y, direction.x);
     
-    // Bullet boyutunu ayarla
-    size = isPlayerBullet ? Vector2.all(20) : Vector2.all(18);
+    // Bullet glow efekti
+    if (isPlayerBullet) {
+      add(
+        ScaleEffect.by(
+          Vector2.all(1.2),
+          EffectController(
+            duration: 0.3,
+            reverseDuration: 0.3,
+            infinite: true,
+            curve: Curves.easeInOut,
+          ),
+        ),
+      );
+    }
     
-    // Bullet rotasyonu
-    angle = direction.angleToSigned(Vector2(0, -1));
-    
-    // Renk ayarı
-    add(ColorEffect(
-      isPlayerBullet ? Colors.cyan : Colors.red,
-      EffectController(duration: 0.1),
-      opacityFrom: 0.8,
-      opacityTo: 1.0,
+    // Auto-remove timer
+    add(TimerComponent(
+      period: 3.0,
+      removeOnFinish: true,
+      onTick: () => removeFromParent(),
     ));
   }
 
-  void reset() {
-    hitSomething = false;
-    pierceCount = 0;
-    hitTargets.clear();
+  void _addTrailPosition() {
+    _trailPositions.add(position.clone());
+    if (_trailPositions.length > _maxTrailLength) {
+      _trailPositions.removeAt(0);
+    }
   }
 
   @override
   void update(double dt) {
     super.update(dt);
     position.add(direction * speed * dt);
-
-    // Geniş alan için büyük sınırlar
-    if (position.y < -500 ||
-        position.y > gameRef.size.y + 500 ||
-        position.x < -500 ||
-        position.x > gameRef.size.x + 500) {
+    
+    // Ekran dışına çıktıysa kaldır
+    if (position.x < -100 || position.x > gameRef.size.x + 100 ||
+        position.y < -100 || position.y > gameRef.size.y + 100) {
       removeFromParent();
+    }
+  }
+
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+    
+    // Trail efekti çiz
+    if (_trailPositions.length > 1) {
+      final paint = Paint()
+        ..color = (isPlayerBullet ? Colors.cyan : Colors.red).withOpacity(0.3)
+        ..strokeWidth = 3.0
+        ..style = PaintingStyle.stroke;
+      
+      final path = Path();
+      for (int i = 0; i < _trailPositions.length; i++) {
+        final trailPos = _trailPositions[i] - position; // Relative to bullet
+        if (i == 0) {
+          path.moveTo(trailPos.x, trailPos.y);
+        } else {
+          path.lineTo(trailPos.x, trailPos.y);
+        }
+      }
+      
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  void handleHit(Component target) {
+    hitTargets.add(target);
+    
+    if (hasPiercing && currentPierces < maxPiercing) {
+      currentPierces++;
+      // Piercing efekti - bullet biraz yavaşlar
+      speed *= 0.8;
+      
+      // Küçük hit efekti
+      gameRef.world.add(
+        CircleComponent(
+          radius: 8,
+          paint: Paint()..color = Colors.yellow.withOpacity(0.8),
+          position: position.clone(),
+          anchor: Anchor.center,
+        )..add(
+          SequenceEffect([
+            ScaleEffect.by(Vector2.all(2), EffectController(duration: 0.2)),
+            OpacityEffect.fadeOut(EffectController(duration: 0.3)),
+            RemoveEffect(),
+          ]),
+        ),
+      );
+    } else {
+      // Hit efekti ve bullet yok et
+      _createHitEffect();
+      removeFromParent();
+    }
+  }
+
+  void _createHitEffect() {
+    // Hit patlaması efekti
+    final hitEffect = CircleComponent(
+      radius: 6,
+      paint: Paint()..color = (isPlayerBullet ? Colors.cyan : Colors.red).withOpacity(0.9),
+      position: position.clone(),
+      anchor: Anchor.center,
+    );
+    
+    hitEffect.add(
+      SequenceEffect([
+        ScaleEffect.by(Vector2.all(3), EffectController(duration: 0.15, curve: Curves.easeOut)),
+        OpacityEffect.fadeOut(EffectController(duration: 0.2)),
+        RemoveEffect(),
+      ]),
+    );
+    
+    gameRef.world.add(hitEffect);
+    
+    // Parçacık efekti
+    for (int i = 0; i < 6; i++) {
+      final angle = (i * math.pi * 2) / 6;
+      final particle = CircleComponent(
+        radius: 2,
+        paint: Paint()..color = Colors.white.withOpacity(0.8),
+        position: position.clone(),
+        anchor: Anchor.center,
+      );
+      
+      final direction = Vector2(math.cos(angle), math.sin(angle));
+      particle.add(
+        SequenceEffect([
+          MoveEffect.by(direction * 30, EffectController(duration: 0.3)),
+          OpacityEffect.fadeOut(EffectController(duration: 0.2)),
+          RemoveEffect(),
+        ]),
+      );
+      
+      gameRef.world.add(particle);
     }
   }
 
   @override
   void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollisionStart(intersectionPoints, other);
-
-    if ((hitSomething && !hasPiercing) ||
-        (isPlayerBullet && other is Enemy && hitTargets.contains(other)) ||
-        (!isPlayerBullet && other is Player && hitSomething)) {
-      return;
-    }
-
+    
+    if (hitTargets.contains(other)) return;
+    
     if (isPlayerBullet && other is Enemy && !other.isDying) {
+      other.takeDamage(damage);
       handleHit(other);
     } else if (!isPlayerBullet && other is Player && !other.isDying) {
-      hitSomething = true;
-      other.takeDamage(15);
-      showExplosion();
-      removeFromParent();
-    }
-  }
-  
-  void handleHit(Enemy enemy) {
-    if (hasPiercing) {
-      hitTargets.add(enemy);
-      pierceCount++;
-      hitSomething = pierceCount >= maxPierceCount;
-    } else {
-      hitSomething = true;
-    }
-
-    enemy.takeDamage(damage);
-    showExplosion();
-
-    if (!hasPiercing || pierceCount >= maxPierceCount) {
-      removeFromParent();
+      other.takeDamage(damage);
+      handleHit(other);
     }
   }
 
-  void showExplosion() {
-    try {
-      gameRef.world.add(ExplosionEffect(position: position));
-    } catch (e) {
-      print('Explosion efekti oluşturma hatası: $e');
-    }
+  @override
+  void onRemove() {
+    _trailTimer.stop();
+    super.onRemove();
   }
 }
 
