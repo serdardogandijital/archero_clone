@@ -244,9 +244,75 @@ class Player extends SpriteAnimationComponent with HasGameRef<ArcheroGame>, Coll
   }
   void increaseSpeed(double percentage) => speed *= (1 + percentage);
   void enableDoubleShot() => hasDoubleShot = true;
+  void enableTripleShot() {
+    // Üçlü atış - implementasyon eksik, şimdilik double shot gibi davransın
+    hasDoubleShot = true;
+  }
   void enablePiercing() => hasPiercing = true;
   void enableCriticalHit(double chance) => criticalChance += chance;
   void enableHpRegen(double amount) => regenAmount += amount;
+  
+  // Yeni upgrade methodları - basit implementasyonlar
+  void enableExplosiveShot(double radius) {
+    // Patlayıcı mermi - şimdilik damage artırır
+    damageMultiplier += 0.5;
+  }
+  
+  void enableMagneticField(double range) {
+    // Manyetik alan - XP çekim mesafesi artırır
+    // Implementasyon sonraya bırakıldı
+  }
+  
+  void enableShield(int hitCount) {
+    // Kalkan sistemi - implementasyon sonraya bırakıldı
+    maxHealth += hitCount * 10;
+    healthNotifier.value = maxHealth;
+  }
+  
+  void enableFrostBullets(double slowPercent) {
+    // Buzlu mermiler - şimdilik damage artırır
+    damageMultiplier += 0.3;
+  }
+  
+  void enableFireBullets(double duration) {
+    // Ateşli mermiler - şimdilik damage artırır
+    damageMultiplier += 0.4;
+  }
+  
+  void enableLightningStrike(double damage) {
+    // Şimşek çarpması - şimdilik damage artırır
+    damageMultiplier += 0.6;
+  }
+  
+  void enableRicochet(int bounceCount) {
+    // Sekme atışı - implementasyon sonraya bırakıldı
+    damageMultiplier += 0.3;
+  }
+  
+  void enableVampiric(double healAmount) {
+    // Vampirik atış - can yenileme artırır
+    regenAmount += healAmount;
+  }
+  
+  void enableBerserker(double damageIncrease) {
+    // Berserker modu - düşük canda damage artışı
+    damageMultiplier += damageIncrease * 0.5; // Basit implementasyon
+  }
+  
+  void enableTimeWarp(double interval) {
+    // Zaman büküm - implementasyon sonraya bırakıldı
+    increaseAttackSpeed(0.2); // Şimdilik ateş hızı artırır
+  }
+  
+  void enableMultiTarget(int targetCount) {
+    // Çoklu hedef - şimdilik double shot gibi davransın
+    hasDoubleShot = true;
+  }
+  
+  void enableBouncyBullets(int bounceCount) {
+    // Zıplayan mermiler - implementasyon sonraya bırakıldı
+    damageMultiplier += 0.25;
+  }
 
   @override
   void onRemove() {
